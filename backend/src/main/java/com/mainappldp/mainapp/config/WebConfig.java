@@ -15,6 +15,7 @@ public class WebConfig {
 			public void addCorsMappings(CorsRegistry registry) {
 				registry.addMapping("/**")
 						.allowedOrigins(
+								"https://7f5c2ed61ebb.ngrok-free.app",
 								"https://nelsonkimaiga.github.io"
 						)
 						.allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
