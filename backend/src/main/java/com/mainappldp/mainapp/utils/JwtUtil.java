@@ -23,7 +23,7 @@ public class JwtUtil {
 	}
 	
 	public String getUserId(String token) {
-		return decodeToken(token).getClaim("userId").asString();
+		return decodeToken(token).getSubject();
 	}
 	
 	public String getEmail(String token) {
