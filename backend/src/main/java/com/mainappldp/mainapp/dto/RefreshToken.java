@@ -9,6 +9,6 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class RefreshTokenRequest {
+public class RefreshToken {
 	private String refreshToken;
 }

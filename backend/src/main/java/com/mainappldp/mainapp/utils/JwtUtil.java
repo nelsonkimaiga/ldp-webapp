@@ -27,7 +27,9 @@ public class JwtUtil {
 	}
 	
 	public String getEmail(String token) {
-		return decodeToken(token).getSubject();
+		DecodedJWT jwt = decodeToken(token);
+		String email = jwt.getClaim("email").asString();
+		return email != null ? email : jwt.getSubject();
 	}
 	
 	public String getRole(String token) {

@@ -1,64 +1,62 @@
 package com.mainappldp.mainapp.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mainappldp.mainapp.model.JwkKeys;
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.scheduling.annotation.Scheduled;
 
 import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Base64;
-import java.util.Map;
 
 @Service
 public class JwkClientService {
 	
-	private final RestTemplate restTemplate;
-	
 	@Value("${idp.jwks-uri}")
-	private String jwksUri;
+	private String jwkUri;
 	
-	private volatile PublicKey publicKey = null;
+	private final RestTemplate restTemplate = new RestTemplate();
+	private final ObjectMapper objectMapper = new ObjectMapper();
 	
-	public JwkClientService() {
-		this.restTemplate = new RestTemplate();
-	}
-	
-	@PostConstruct
-	@Scheduled(fixedRate = 3600000)
-	public void fetchJwk() {
-		try {
-			String jwksResponse = restTemplate.getForObject(jwksUri, String.class);
-			ObjectMapper mapper = new ObjectMapper();
-			JwkKeys jwkKeys = mapper.readValue(jwksResponse, JwkKeys.class);
-			
-			if (jwkKeys != null && !jwkKeys.getKeys().isEmpty()) {
-				Map<String, Object> firstKey = jwkKeys.getKeys().get(0);
-				String modulusB64 = (String) firstKey.get("n");
-				String exponentB64 = (String) firstKey.get("e");
-				
-				BigInteger modulus = new BigInteger(1, Base64.getUrlDecoder().decode(modulusB64));
-				BigInteger exponent = new BigInteger(1, Base64.getUrlDecoder().decode(exponentB64));
-				
-				RSAPublicKeySpec spec = new RSAPublicKeySpec(modulus, exponent);
-				KeyFactory factory = KeyFactory.getInstance("RSA");
-				this.publicKey = factory.generatePublic(spec);
-			}
-		}
-		catch (Exception e) {
-			System.err.println("Error fetching JWKS: " + e.getMessage());
-		}
-	}
+	private PublicKey cachedPublicKey;
+	private long lastFetchedTime = 0;
+	private static final long CACHE_EXPIRATION_MILLIS = 3600 * 1000;
 	
 	public PublicKey getPublicKey() {
-		if (this.publicKey == null) {
-			throw new IllegalStateException("Public key not available.");
+		if (cachedPublicKey == null || isCacheExpired()) {
+			fetchAndCachePublicKey();
 		}
-		return this.publicKey;
+		return cachedPublicKey;
+	}
+	
+	private boolean isCacheExpired() {
+		return (System.currentTimeMillis() - lastFetchedTime) > CACHE_EXPIRATION_MILLIS;
+	}
+	
+	private void fetchAndCachePublicKey() {
+		try {
+			String jwksJson = restTemplate.getForObject(jwkUri, String.class);
+			JsonNode jwks = objectMapper.readTree(jwksJson);
+			JsonNode key = jwks.get("keys").get(0);
+			
+			String nStr = key.get("n").asText();
+			String eStr = key.get("e").asText();
+			
+			BigInteger modulus = new BigInteger(1, Base64.getUrlDecoder().decode(nStr));
+			BigInteger publicExponent = new BigInteger(1, Base64.getUrlDecoder().decode(eStr));
+			
+			RSAPublicKeySpec spec = new RSAPublicKeySpec(modulus, publicExponent);
+			KeyFactory factory = KeyFactory.getInstance("RSA");
+			
+			cachedPublicKey = factory.generatePublic(spec);
+			lastFetchedTime = System.currentTimeMillis();
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new IllegalStateException("Failed to get public key from IDP", e);
+		}
 	}
 }

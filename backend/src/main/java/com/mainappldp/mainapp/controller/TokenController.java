@@ -1,6 +1,6 @@
 package com.mainappldp.mainapp.controller;
 
-import com.mainappldp.mainapp.dto.RefreshTokenRequest;
+import com.mainappldp.mainapp.dto.RefreshToken;
 import com.mainappldp.mainapp.dto.TokenResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -21,7 +21,7 @@ public class TokenController {
 	private final RestTemplate restTemplate = new RestTemplate();
 	
 	@PostMapping("/refresh")
-	public ResponseEntity<TokenResponse> refreshToken(@RequestBody RefreshTokenRequest refreshToken) {
+	public ResponseEntity<TokenResponse> refreshToken(@RequestBody RefreshToken refreshToken) {
 		ResponseEntity<TokenResponse> response = restTemplate.postForEntity(
 				idpRefreshTokenUri,
 				refreshToken,
