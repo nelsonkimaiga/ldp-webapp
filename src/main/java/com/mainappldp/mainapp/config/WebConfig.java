@@ -15,8 +15,7 @@ public class WebConfig {
 			public void addCorsMappings(CorsRegistry registry) {
 				registry.addMapping("/**")
 						.allowedOrigins(
-								"https://92364e58ea3f.ngrok-free.app",
-								"https://nelsonkimaiga.github.io"
+								"https://ldp-webapp-frontend.vercel.app"
 						)
 						.allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
 						.allowedHeaders("*")
